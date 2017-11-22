@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <name>bagmetti</name>
+  <version>0.1.0</version>
+  <description>BAG file utility for MEssage, Tf, and TIme</description>
+
+  <maintainer email="mizuno.naoki@rm.is.tohoku.ac.jp">Naoki Mizuno</maintainer>
+
+  <license>MIT</license>
+
+  <url type="website">https://github.com/naoki-mizuno/bagmetti</url>
+
+  <author>Naoki Mizuno</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

@@ -1,0 +1,13 @@
+*
+!.gitignore
+!*.py
+!*.yaml
+!*.launch
+!CMakeLists.txt
+!package.xml
+!README.md
+!scripts/
+!src/
+!src/*
+!configs/
+!launch/
