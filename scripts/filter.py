@@ -37,6 +37,8 @@ def get_topics(rules, all_topics=None):
         if r.is_topic() and r.is_include():
             topics.add(r.token_from)
         elif r.is_topic() and r.is_exclude():
+            if r.token_from not in topics_to_include:
+                continue
             topics_to_include.remove(r.token_from)
         if r.is_tf():
             topics.add('/tf')
