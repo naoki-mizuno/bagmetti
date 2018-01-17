@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 from rospy import Time
+import re
 
 
 class Rule:
@@ -170,17 +171,25 @@ class Rule:
     @staticmethod
     def __parse_time__(rule, line):
         # Seconds from start of file
-        rule.token_from, rule.token_to = map(float, Rule.__token_sep__(line)[0:2])
+        tokens = Rule.__token_sep__(line)
+        if len(tokens) < 2:
+            rule.token_from = float(tokens[0])
+        else:
+            rule.token_from = float(tokens[0]) if tokens[0] is not None else None
+            rule.token_to = float(tokens[1]) if tokens[1] is not None else None
         return rule
 
     @staticmethod
     def __parse_tf__(rule, line):
-        rule.token_from, rule.token_to = Rule.__token_sep__(line)[0:2]
+        tokens = Rule.__token_sep__(line)
+        if len(tokens) < 2:
+            rule.token_from = tokens[0]
+        else:
+            rule.token_from, rule.token_to = tokens[0:2]
         return rule
 
     @staticmethod
     def __parse_topic__(rule, line):
-        # Strip the leading / from topic names
         rule.token_from = line.lstrip('/')
         # Then add it
         rule.token_from = '/' + rule.token_from
@@ -188,8 +197,7 @@ class Rule:
 
     @staticmethod
     def __token_sep__(line):
-        for sep in Rule.TOKEN_SEP:
-            line = line.replace(sep, '\0')
-        tokens = line.split('\0')
+        pat = '\s*(?:{0})\s*'.format('|'.join(Rule.TOKEN_SEP))
+        tokens = re.split(pat, line.strip())
         # Put only non-empty elements in the list
-        return list(filter(lambda t: t != '', map(lambda t: t.strip(), tokens)))
+        return list(map(lambda t: None if t == '' else t.strip(), tokens))
