@@ -18,33 +18,38 @@ filter.py <bag file path> <output file path> <config file path>
 
 ## Config File Format
 
-A line in the config file is in the following format:
+Here are some samples to get you started:
 
 ```
-[enforcement][rule_type]: [rule]
+# gmapping
+default: +rule
+default: +tf -topic +time
+
+# gmapping does this transformation
+-tf: map -> odom
+odom
+scan
+/imu/data
+-/velodyne_points
 ```
+
+A line can start with a `+` or a `-` (or `!`), which indicates whether it
+should include or exclude that message (i.e. topic/tf/time).
+
+Following the `+` or `-`, the rule type comes next. A rule type is one of the
+following: `topic`, `tf`, or `time`.
 
 Lines starting with `#` are comment lines.
 
-
-### Enforcement
-
-Enforcement specifies whether to include or exclude the pattern that follows.
-
-- Include: `+`
-- Exclude: `-` or `!`
-
-By default, it will include but you can change the default enforcement by
-using the `default` specifier. You can pass `plus`, `minus`, `include`,
-`exclude` to the `default` specifier.
-
-When multiple inclusions are specified, ANY message that matches the inclusion
-rules goes into the output bag file. For exclusions, a message must satisfy
-ALL exclusion rules in order to go into the output bag file.
+Following is a explanation of the `default` lines. `+rule` or simply `+`, says
+that when a line doesn't start with either a `+` or `-`, automatically add `+`
+to it. With `-rule`, the default becomes `-` (exclusion). `+tf -topic +time`
+says that unspecified TF transformations should be included, topics should be
+excluded, and time should be included.
 
 ```
 default: -
-# Do a bunch of exclusion
+# Do a bunch of exclusions
 default: +
 # Then switch back to inclusion to do some inclusions
 ```
@@ -54,11 +59,7 @@ default: +
 
 #### Topics
 
-Rule type: `topic`
-
-The topic name can (but doesn't have to) start with a `/`. If you specify a
-topic for both inclusion and exclusion (i.e. `+` and `-` in the same
-configuration file), inclusion will be prioritized.
+Rule type: `topic` (can be omitted)
 
 ```
 # Include (since that's the default enforcement) /map topic
