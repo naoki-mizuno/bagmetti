@@ -10,16 +10,18 @@ def usage():
     return 'filter.py <in bag> <out bag> <conf file>\n'
 
 
-def get_begin_end(rules, t_start, t_end):
+def get_begin_end(time_rules, bag_file):
+    # Find the min/max relative time (0 at the beginning of the bag file)
     t_min = None
     t_max = None
-    for r in rules:
+    for r in time_rules:
         if r.is_time() and r.is_include():
             if t_min is None or r.token_from < t_min:
                 t_min = r.token_from
             if t_max is None or r.token_to > t_max:
                 t_max = r.token_to
 
+    t_start, t_end = bag_file.get_start_time(), bag_file.get_end_time()
     t_min = t_start if t_min is None else t_min + t_start
     t_max = t_end if t_max is None else t_max + t_start
     return Time(t_min), Time(t_max)
@@ -73,10 +75,14 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
     include_rules, exclude_rules, time_rules = read_rules(conf_file_fn)
     topic_rules = include_rules + exclude_rules
 
-    Rule.set_begin_time(bag_in.get_start_time())
+    # Set the time UNIX time at the start of the bag file
+    for r in topic_rules:
+        r.set_begin_time(bag_in.get_start_time())
+    for r in time_rules:
+        r.set_begin_time(bag_in.get_start_time())
 
-# Find start and end times so that we can speed up the reading as much as possible
-    t_start, t_end = get_begin_end(time_rules, bag_in.get_start_time(), bag_in.get_end_time())
+    # Find start and end times that are actually required
+    t_start, t_end = get_begin_end(time_rules, bag_in)
 # Same thing for topics
     all_topics = bag_in.get_type_and_topic_info().topics.keys()
     topics = get_topics(rules, all_topics)
