@@ -84,8 +84,8 @@ class Rule:
         is_match = False
         # TODO: Only filter transforms that are bad
         for transform in msg.transforms:
-            parent_frame = transform.header.frame_id
-            child_frame = transform.child_frame_id
+            parent_frame = transform.header.frame_id.lstrip('/')
+            child_frame = transform.child_frame_id.lstrip('/')
 
             if self.token_from is None and self.token_to == child_frame:
                 is_match = True
