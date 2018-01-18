@@ -42,22 +42,37 @@ def get_topics(rules, all_topics=None):
     return topics
 
 
-def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
-    bag_in = Bag(bag_in_fn)
-    bag_out = Bag(bag_out_fn, 'w')
-
-# Read in rules
-    rules = []
+def read_rules(conf_file_fn):
+    # Read in rules
+    include_rules = []
+    exclude_rules = []
     time_rules = []
+
     with open(conf_file_fn) as conf_file:
         for line in conf_file:
             rule = Rule.parse(line)
             if rule is None:
                 continue
-            if rule.is_time():
+            elif rule.is_time():
                 time_rules.append(rule)
             else:
-                rules.append(rule)
+                if rule.is_include():
+                    include_rules.append(rule)
+                elif rule.is_exclude():
+                    exclude_rules.append(rule)
+                else:
+                    sys.stderr.write("Couldn't parse line: {0}\n".format(line))
+
+    return include_rules, exclude_rules, time_rules
+
+
+def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
+    bag_in = Bag(bag_in_fn)
+    bag_out = Bag(bag_out_fn, 'w')
+
+    include_rules, exclude_rules, time_rules = read_rules(conf_file_fn)
+    topic_rules = include_rules + exclude_rules
+
     Rule.set_begin_time(bag_in.get_start_time())
 
 # Find start and end times so that we can speed up the reading as much as possible
@@ -70,7 +85,7 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
         # Normal rules
         inclusion_ok = False
         exclusion_ok = True
-        for r in rules:
+        for r in topic_rules:
             if r.is_include() and r.is_ok_with(topic, msg, t):
                 inclusion_ok = True
             elif r.is_exclude() and not r.is_ok_with(topic, msg, t):
