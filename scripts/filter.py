@@ -27,20 +27,25 @@ def get_begin_end(time_rules, bag_file):
     return Time(t_min), Time(t_max)
 
 
-def get_topics(rules, all_topics=None):
+def get_topics(rules, bag_topics):
+    # Read all topics from bag files
+    if Rule.DEFAULT_ENFORCEMENT_TOPIC == Rule.ENFORCEMENT_INCLUDE:
+        return None
+
     topics = set()
-    topics_to_include = set(all_topics) if all_topics is not None else None
+    sample_set = set(bag_topics)
+
     for r in rules:
-        if r.is_topic() and r.is_include():
-            topics.add(r.token_from)
-        elif r.is_topic() and r.is_exclude():
-            if r.token_from not in topics_to_include:
-                continue
-            topics_to_include.remove(r.token_from)
+        if r.is_topic():
+            if r.is_include():
+                topics.add(r.token_from)
+            elif r.is_exclude() and r.token_from in sample_set:
+                sample_set.remove(r.token_from)
         if r.is_tf():
             topics.add('/tf')
+
     if len(topics - {'/tf'}) == 0:
-        topics = topics_to_include
+        topics = None
     return topics
 
 
@@ -83,26 +88,42 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
 
     # Find start and end times that are actually required
     t_start, t_end = get_begin_end(time_rules, bag_in)
-# Same thing for topics
-    all_topics = bag_in.get_type_and_topic_info().topics.keys()
-    topics = get_topics(rules, all_topics)
+    # Find topics that are actually required
+    bag_topics = bag_in.get_type_and_topic_info().topics.keys()
+    topics = get_topics(topic_rules, bag_topics)
 
     for topic, msg, t in bag_in.read_messages(topics=topics, start_time=t_start, end_time=t_end):
-        # Normal rules
-        inclusion_ok = False
-        exclusion_ok = True
-        for r in topic_rules:
-            if r.is_include() and r.is_ok_with(topic, msg, t):
-                inclusion_ok = True
-            elif r.is_exclude() and not r.is_ok_with(topic, msg, t):
-                exclusion_ok = False
+        # Check default enforcement for this message
+        if topic == '/tf':
+            default = Rule.DEFAULT_ENFORCEMENT_TF
+        else:
+            default = Rule.DEFAULT_ENFORCEMENT_TOPIC
+
+        # When default is to include, only check whether the exclusion
+        # rules are satisfied, and if all of them are ok, write it out
+        if default == Rule.ENFORCEMENT_INCLUDE:
+            # Check exclusions
+            ok = True
+            for r in exclude_rules:
+                if r.msg_match(topic, msg, t):
+                    ok = False
+        # When default is to exclude, check if the message matches any
+        # of the inclusion rules and write it out if it does
+        else:
+            # Check inclusions
+            ok = False
+            for r in include_rules:
+                if r.msg_match(topic, msg, t):
+                    ok = True
+
         # Time rules
         time_ok = True
         for r in time_rules:
             if not r.is_ok_with(topic, msg, t):
                 time_ok = False
+
         # Write to file
-        if (inclusion_ok or exclusion_ok) and time_ok:
+        if ok and time_ok:
             bag_out.write(topic, msg, t)
 
     bag_out.close()
@@ -116,4 +137,3 @@ if __name__ == '__main__':
 else:
     sys.stderr.write('bagmetti needs to be run as a script\n')
     sys.exit(1)
-

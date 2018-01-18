@@ -9,6 +9,9 @@ class Rule:
     ENFORCEMENT_INCLUDE = '+'
     ENFORCEMENT_EXCLUDE = '-'
     DEFAULT_ENFORCEMENT = ENFORCEMENT_INCLUDE
+    DEFAULT_ENFORCEMENT_TOPIC = DEFAULT_ENFORCEMENT
+    DEFAULT_ENFORCEMENT_TF = DEFAULT_ENFORCEMENT
+    DEFAULT_ENFORCEMENT_TIME = DEFAULT_ENFORCEMENT
     RULE_TYPE_TIME = 'time'
     RULE_TYPE_TOPIC = 'topic'
     RULE_TYPE_TF = 'tf'
@@ -26,6 +29,7 @@ class Rule:
         self.enforcement = None
         self.token_from = None
         self.token_to = None
+        self.begin_time = 0
 
     def __str__(self):
         to_ret = '{0} ({1})'.format(self.rule_type, self.enforcement)
@@ -34,6 +38,12 @@ class Rule:
         else:
             to_ret += ': {0}'.format(self.token_from)
         return to_ret
+
+    def set_begin_time(self, t):
+        if t is Time:
+            self.begin_time = t.to_sec()
+        else:
+            self.begin_time = float(t)
 
     def is_include(self):
         return self.enforcement == Rule.ENFORCEMENT_INCLUDE
@@ -51,54 +61,42 @@ class Rule:
         return self.rule_type == Rule.RULE_TYPE_TIME
 
     def is_ok_with(self, topic, msg, t):
+        is_match = self.msg_match(topic, msg, t)
+        return is_match if self.is_include() else not is_match
+
+    def msg_match(self, topic, msg, t):
         # Subtract offset
-        t = t.to_sec() - Rule.begin_time
+        t = t.to_sec() - self.begin_time
         if self.is_topic():
-            return self.__ok_topic__(topic, msg, t)
+            return self.__msg_match_topic__(topic, msg, t)
         elif self.is_tf():
-            return self.__ok_tf__(topic, msg, t)
+            return self.__msg_match_tf__(topic, msg, t)
         elif self.is_time():
-            return self.__ok_time__(topic, msg, t)
+            return self.__msg_match_time__(topic, msg, t)
 
-    def __ok_topic__(self, topic, msg, t):
-        match = (self.token_from == topic)
-        if self.is_include():
-            return match
-        else:
-            return not match
+    def __msg_match_topic__(self, topic, msg, t):
+        return self.token_from == topic
 
-    def __ok_tf__(self, topic, msg, t):
+    def __msg_match_tf__(self, topic, msg, t):
         if topic.lstrip('/') != 'tf':
-            if self.is_include():
-                return False
-            else:
-                return True
+            return False
 
-        all_match = True
-        any_match = False
+        is_match = False
         # TODO: Only filter transforms that are bad
         for transform in msg.transforms:
             parent_frame = transform.header.frame_id
             child_frame = transform.child_frame_id
 
             if self.token_from is None and self.token_to == child_frame:
-                any_match = True
+                is_match = True
             elif self.token_to is None and self.token_from == parent_frame:
-                any_match = True
+                is_match = True
             elif self.token_from == parent_frame and self.token_to == child_frame:
-                any_match = True
+                is_match = True
 
-            if self.token_from is not None and self.token_from != parent_frame:
-                all_match = False
-            elif self.token_to is not None and self.token_to != child_frame:
-                all_match = False
+        return is_match
 
-        if self.is_include():
-            return all_match
-        else:
-            return not any_match
-
-    def __ok_time__(self, topic, msg, t):
+    def __msg_match_time__(self, topic, msg, t):
         is_in_range = True
         # TODO: Look at header.stamp for tf?
         if self.token_from is not None and t < self.token_from:
@@ -106,22 +104,38 @@ class Rule:
         elif self.token_to is not None and t > self.token_to:
             is_in_range = False
 
-        if self.is_include():
-            return is_in_range
-        else:
-            return not is_in_range
+        return is_in_range
 
     @staticmethod
-    def set_begin_time(t):
-        if t is Time:
-            Rule.begin_time = t.to_sec()
-        else:
-            Rule.begin_time = float(t)
+    def change_default(line):
+        tokens = re.split('\s*[:, ]\s*', line.lower())
+
+        for token in tokens[1:]:
+            if token == '+':
+                Rule.DEFAULT_ENFORCEMENT = Rule.ENFORCEMENT_INCLUDE
+            elif token == '-':
+                Rule.DEFAULT_ENFORCEMENT = Rule.ENFORCEMENT_EXCLUDE
+            else:
+                # '+tf' -> ['+', 'tf']
+                enforcement = token[0]
+                what = token.strip('+-')
+                if what == 'rule':
+                    Rule.DEFAULT_ENFORCEMENT = enforcement
+                elif what == Rule.RULE_TYPE_TF:
+                    Rule.DEFAULT_ENFORCEMENT_TF = enforcement
+                elif what == Rule.RULE_TYPE_TOPIC:
+                    Rule.DEFAULT_ENFORCEMENT_TOPIC = enforcement
+                elif what == Rule.RULE_TYPE_TIME:
+                    Rule.DEFAULT_ENFORCEMENT_TIME = enforcement
+        return None
 
     @staticmethod
     def parse(line):
         # Comment line
         if line.startswith('#'):
+            return None
+        if line.startswith('default'):
+            Rule.change_default(line)
             return None
 
         to_ret = Rule()
@@ -143,19 +157,6 @@ class Rule:
             rule_type = Rule.DEFAULT_RULE_TYPE
             rest = line.strip()
         rule_type = rule_type.strip()
-
-        if rule_type == 'default':
-            what = rest.strip().lower()
-            if what == 'plus' or what == 'include':
-                what = Rule.ENFORCEMENT_INCLUDE
-            elif what == 'minus' or what == 'exclude':
-                what = Rule.ENFORCEMENT_EXCLUDE
-
-            if what != '+' and what != '-':
-                raise ValueError('Expected +, -, plus, minus for default')
-
-            Rule.DEFAULT_ENFORCEMENT = what
-            return None
 
         # Parse according to rule type
         to_ret.rule_type = rule_type.lower()
