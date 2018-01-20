@@ -9,14 +9,10 @@ BAG file utility for MEssage, Tf, and TIme.
 
 ## Running
 
+Filter specified messages from a bag file and output to a different bag file.
+
 ```
 rosrun bagmetti filter.py <bag file path> <output file path> <config file path>
-```
-
-or simply,
-
-```
-filter.py <bag file path> <output file path> <config file path>
 ```
 
 
@@ -31,14 +27,21 @@ default: +tf -topic +time
 
 # gmapping does this transformation
 -tf: map -> odom
-odom
-scan
-/imu/data
--/velodyne_points
+# GPS-based gmapping
+-tf: gps_origin -> gps_antenna
+-tf: gps_antenna -> gps_base_link
+-tf: map -> odom
+/velodyne_points
+/odom
+/vg440/imu/data
+/cnt723/count
+/ssv102/nmea_sentence
+/javad/nmea_sentence
+/cnt723/count
 ```
 
-A line can start with a `+` or a `-` (or `!`), which indicates whether it
-should include or exclude that message (i.e. topic/tf/time).
+A line starts with a `+` or a `-` (or `!`), which indicates whether it should
+include or exclude any matching message (i.e. topic/tf/time).
 
 Following the `+` or `-`, the rule type comes next. A rule type is one of the
 following: `topic`, `tf`, or `time`.
