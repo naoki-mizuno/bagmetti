@@ -13,3 +13,5 @@
 !configs/
 !launch/
 !samples/
+!images/
+!images/*

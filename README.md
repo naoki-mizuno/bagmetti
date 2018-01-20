@@ -1,5 +1,9 @@
 # Bagmetti
 
+<div style="margin: 0 auto">
+  <img src="images/bagmetti.jpg" alt="Bagmetti processing a bag fie"/>
+</div>
+
 BAG file utility for MEssage, Tf, and TIme.
 
 
