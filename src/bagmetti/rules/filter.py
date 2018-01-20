@@ -4,7 +4,7 @@ from rospy import Time
 import re
 
 
-class Rule:
+class FilterRule:
     TOKEN_SEP = [',', '->', ' ']
     ENFORCEMENT_INCLUDE = '+'
     ENFORCEMENT_EXCLUDE = '-'
@@ -46,19 +46,19 @@ class Rule:
             self.begin_time = float(t)
 
     def is_include(self):
-        return self.enforcement == Rule.ENFORCEMENT_INCLUDE
+        return self.enforcement == FilterRule.ENFORCEMENT_INCLUDE
 
     def is_exclude(self):
-        return self.enforcement == Rule.ENFORCEMENT_EXCLUDE
+        return self.enforcement == FilterRule.ENFORCEMENT_EXCLUDE
 
     def is_topic(self):
-        return self.rule_type == Rule.RULE_TYPE_TOPIC
+        return self.rule_type == FilterRule.RULE_TYPE_TOPIC
 
     def is_tf(self):
-        return self.rule_type == Rule.RULE_TYPE_TF
+        return self.rule_type == FilterRule.RULE_TYPE_TF
 
     def is_time(self):
-        return self.rule_type == Rule.RULE_TYPE_TIME
+        return self.rule_type == FilterRule.RULE_TYPE_TIME
 
     def is_ok_with(self, topic, msg, t):
         is_match = self.msg_match(topic, msg, t)
@@ -112,21 +112,21 @@ class Rule:
 
         for token in tokens[1:]:
             if token == '+':
-                Rule.DEFAULT_ENFORCEMENT = Rule.ENFORCEMENT_INCLUDE
+                FilterRule.DEFAULT_ENFORCEMENT = FilterRule.ENFORCEMENT_INCLUDE
             elif token == '-':
-                Rule.DEFAULT_ENFORCEMENT = Rule.ENFORCEMENT_EXCLUDE
+                FilterRule.DEFAULT_ENFORCEMENT = FilterRule.ENFORCEMENT_EXCLUDE
             else:
                 # '+tf' -> ['+', 'tf']
                 enforcement = token[0]
                 what = token.strip('+-')
                 if what == 'rule':
-                    Rule.DEFAULT_ENFORCEMENT = enforcement
-                elif what == Rule.RULE_TYPE_TF:
-                    Rule.DEFAULT_ENFORCEMENT_TF = enforcement
-                elif what == Rule.RULE_TYPE_TOPIC:
-                    Rule.DEFAULT_ENFORCEMENT_TOPIC = enforcement
-                elif what == Rule.RULE_TYPE_TIME:
-                    Rule.DEFAULT_ENFORCEMENT_TIME = enforcement
+                    FilterRule.DEFAULT_ENFORCEMENT = enforcement
+                elif what == FilterRule.RULE_TYPE_TF:
+                    FilterRule.DEFAULT_ENFORCEMENT_TF = enforcement
+                elif what == FilterRule.RULE_TYPE_TOPIC:
+                    FilterRule.DEFAULT_ENFORCEMENT_TOPIC = enforcement
+                elif what == FilterRule.RULE_TYPE_TIME:
+                    FilterRule.DEFAULT_ENFORCEMENT_TIME = enforcement
         return None
 
     @staticmethod
@@ -135,44 +135,44 @@ class Rule:
         if line.startswith('#'):
             return None
         if line.startswith('default'):
-            Rule.change_default(line)
+            FilterRule.change_default(line)
             return None
 
-        to_ret = Rule()
+        to_ret = FilterRule()
 
         # + or -?
-        if line.startswith(Rule.ENFORCEMENT_INCLUDE):
-            to_ret.enforcement = Rule.ENFORCEMENT_INCLUDE
-        elif line.startswith(Rule.ENFORCEMENT_EXCLUDE) or line.startswith('!'):
-            to_ret.enforcement = Rule.ENFORCEMENT_EXCLUDE
+        if line.startswith(FilterRule.ENFORCEMENT_INCLUDE):
+            to_ret.enforcement = FilterRule.ENFORCEMENT_INCLUDE
+        elif line.startswith(FilterRule.ENFORCEMENT_EXCLUDE) or line.startswith('!'):
+            to_ret.enforcement = FilterRule.ENFORCEMENT_EXCLUDE
         else:
-            to_ret.enforcement = Rule.DEFAULT_ENFORCEMENT
+            to_ret.enforcement = FilterRule.DEFAULT_ENFORCEMENT
         # Remove +, -, and ! if any
-        line = line.lstrip(Rule.ENFORCEMENT_INCLUDE + Rule.ENFORCEMENT_EXCLUDE + '!')
+        line = line.lstrip(FilterRule.ENFORCEMENT_INCLUDE + FilterRule.ENFORCEMENT_EXCLUDE + '!')
 
         if ':' in line:
             rule_type, rest = line.strip().split(':', 1)
         else:
             # Topic
-            rule_type = Rule.DEFAULT_RULE_TYPE
+            rule_type = FilterRule.DEFAULT_RULE_TYPE
             rest = line.strip()
         rule_type = rule_type.strip()
 
         # Parse according to rule type
         to_ret.rule_type = rule_type.lower()
-        if to_ret.rule_type == Rule.RULE_TYPE_TIME:
-            return Rule.__parse_time__(to_ret, rest)
-        elif to_ret.rule_type == Rule.RULE_TYPE_TF:
-            return Rule.__parse_tf__(to_ret, rest)
-        elif to_ret.rule_type == Rule.RULE_TYPE_TOPIC:
-            return Rule.__parse_topic__(to_ret, rest)
+        if to_ret.rule_type == FilterRule.RULE_TYPE_TIME:
+            return FilterRule.__parse_time__(to_ret, rest)
+        elif to_ret.rule_type == FilterRule.RULE_TYPE_TF:
+            return FilterRule.__parse_tf__(to_ret, rest)
+        elif to_ret.rule_type == FilterRule.RULE_TYPE_TOPIC:
+            return FilterRule.__parse_topic__(to_ret, rest)
 
         raise ValueError('Invalid rule type {0} passed to parse'.format(rule_type))
 
     @staticmethod
     def __parse_time__(rule, line):
         # Seconds from start of file
-        tokens = Rule.__token_sep__(line)
+        tokens = FilterRule.__token_sep__(line)
         if len(tokens) < 2:
             rule.token_from = float(tokens[0])
         else:
@@ -182,7 +182,7 @@ class Rule:
 
     @staticmethod
     def __parse_tf__(rule, line):
-        tokens = Rule.__token_sep__(line)
+        tokens = FilterRule.__token_sep__(line)
         if len(tokens) < 2:
             rule.token_from = tokens[0]
         else:
@@ -198,7 +198,7 @@ class Rule:
 
     @staticmethod
     def __token_sep__(line):
-        pat = '\s*(?:{0})\s*'.format('|'.join(Rule.TOKEN_SEP))
+        pat = '\s*(?:{0})\s*'.format('|'.join(FilterRule.TOKEN_SEP))
         tokens = re.split(pat, line.strip())
         # Put only non-empty elements in the list
         return list(map(lambda t: None if t == '' else t.strip(), tokens))

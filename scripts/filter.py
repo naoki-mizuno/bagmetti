@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from bagmetti import Rule
+from bagmetti.rules import FilterRule
 from rosbag import Bag
 from rospy import Time
 import sys
@@ -29,7 +29,7 @@ def get_begin_end(time_rules, bag_file):
 
 def get_topics(rules, bag_topics):
     # Read all topics from bag files
-    if Rule.DEFAULT_ENFORCEMENT_TOPIC == Rule.ENFORCEMENT_INCLUDE:
+    if FilterRule.DEFAULT_ENFORCEMENT_TOPIC == FilterRule.ENFORCEMENT_INCLUDE:
         return None
 
     topics = set()
@@ -57,7 +57,7 @@ def read_rules(conf_file_fn):
 
     with open(conf_file_fn) as conf_file:
         for line in conf_file:
-            rule = Rule.parse(line)
+            rule = FilterRule.parse(line)
             if rule is None:
                 continue
             elif rule.is_time():
@@ -95,13 +95,13 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
     for topic, msg, t in bag_in.read_messages(topics=topics, start_time=t_start, end_time=t_end):
         # Check default enforcement for this message
         if topic == '/tf':
-            default = Rule.DEFAULT_ENFORCEMENT_TF
+            default = FilterRule.DEFAULT_ENFORCEMENT_TF
         else:
-            default = Rule.DEFAULT_ENFORCEMENT_TOPIC
+            default = FilterRule.DEFAULT_ENFORCEMENT_TOPIC
 
         # When default is to include, only check whether the exclusion
         # rules are satisfied, and if all of them are ok, write it out
-        if default == Rule.ENFORCEMENT_INCLUDE:
+        if default == FilterRule.ENFORCEMENT_INCLUDE:
             # Check exclusions
             ok = True
             for r in exclude_rules:
