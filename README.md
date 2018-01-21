@@ -23,7 +23,6 @@ Config files use YAML. Here are some samples to get you started:
 ```yaml
 # gmapping
 tf:
-  default: include
   exclude:
     # gmapping does this transformation
     - map -> odom
@@ -32,7 +31,6 @@ tf:
     - gps_antenna -> gps_base_link
     - map -> odom
 topic:
-  default: exclude
   include:
     - /velodyne_points
     - /odom
@@ -48,36 +46,39 @@ time:
 ```
 
 `include` can be written as `+`, and `exclude` can be `-`. It can even be just
-the first character (i.e. `i` or `e`). If only either of `include` or
-`exclude` is specified, the `default` implicitly becomes the other. You can,
-however, explicitly specify the default.
+the first character (i.e. `i` or `e`)! By default, if only either of `include` or
+`exclude` is specified in the message type (`tf`, `topic`, `time`), like in
+the example, the unspecified messages implicitly becomes the other. You can,
+however, explicitly specify the default:
 
 ```yaml
 # amcl
 tf:
+  # Explicitly include unspecified TF transformations
   default: +
-  -:
-    - /map, /odom
+  # Tip: Doesn't have to be a list
+  -: /map, /odom
 topic:
-  # Implicit default: exclude
-  +:
-    - odom
-    - scan
+  # Implicitly exclude unspecified topics
+  +: ['odom', 'scan']
 ```
 
 Be careful when specifying `-` in `default`:
 
-```
+```yaml
 # This is invalid YAML!!
 default: -
 # Make sure to quote!
 default: '-'
 ```
 
-The conclusion is: don't go through the trouble of explicitly specifying the
-`default`.
+I recommend that you don't specify the `default` and just use implicit
+inclusion/exclusion.
+
 
 ### Rule Types
+
+Following sections describe how a rule can be specified.
 
 #### Topics
 
@@ -90,26 +91,21 @@ Rule type: `tf`
 
 The rule for TF is in the following format:
 
-```
-[parent frame][separator][child frame]
-```
-Separator: `,`, ` ` (space), `->`
-
-For example,
-
 ```yaml
 tf:
   include: map -> odom
 ```
 
-will include TF transformations that has `map` as the parent frame ID and
-`odom` as the child frame ID. Either of the frame names can be omitted (e.g.
-`-tf: map ->` to exclude any TF message that has `map` as the parent name).
+This will include TF transformations that has `map` as the parent frame ID and
+`odom` as the child frame ID. `,` or ` ` (space) can be used instead of a
+`->`. Either of the frame names can be omitted:
 
 ```yaml
 tf:
   -: base_link ->
 ```
+
+This will exclude any TF message that has `base_link` as the parent name.
 
 
 #### Time
