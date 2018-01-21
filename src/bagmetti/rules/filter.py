@@ -2,24 +2,22 @@
 
 from rospy import Time
 import re
+import yaml
+import sys
 
 
 class FilterRule:
     TOKEN_SEP = [',', '->', ' ']
-    ENFORCEMENT_INCLUDE = '+'
-    ENFORCEMENT_EXCLUDE = '-'
-    DEFAULT_ENFORCEMENT = ENFORCEMENT_INCLUDE
-    DEFAULT_ENFORCEMENT_TOPIC = DEFAULT_ENFORCEMENT
-    DEFAULT_ENFORCEMENT_TF = DEFAULT_ENFORCEMENT
-    DEFAULT_ENFORCEMENT_TIME = DEFAULT_ENFORCEMENT
+    INCLUDE = '+'
+    EXCLUDE = '-'
+    DEFAULT_ENFORCEMENT_TOPIC = INCLUDE
+    DEFAULT_ENFORCEMENT_TF = INCLUDE
+    DEFAULT_ENFORCEMENT_TIME = INCLUDE
     RULE_TYPE_TIME = 'time'
     RULE_TYPE_TOPIC = 'topic'
     RULE_TYPE_TF = 'tf'
+    RULE_TYPES = (RULE_TYPE_TIME, RULE_TYPE_TOPIC, RULE_TYPE_TF)
     DEFAULT_RULE_TYPE = RULE_TYPE_TOPIC
-
-    TIME = 0
-    TF = 1
-    TOPIC = 2
 
     # Time at the beginning of the file
     begin_time = 0
@@ -46,10 +44,10 @@ class FilterRule:
             self.begin_time = float(t)
 
     def is_include(self):
-        return self.enforcement == FilterRule.ENFORCEMENT_INCLUDE
+        return self.enforcement == FilterRule.INCLUDE
 
     def is_exclude(self):
-        return self.enforcement == FilterRule.ENFORCEMENT_EXCLUDE
+        return self.enforcement == FilterRule.EXCLUDE
 
     def is_topic(self):
         return self.rule_type == FilterRule.RULE_TYPE_TOPIC
@@ -78,7 +76,7 @@ class FilterRule:
         return self.token_from == topic
 
     def __msg_match_tf__(self, topic, msg, t):
-        if topic.lstrip('/') != 'tf':
+        if topic.lstrip('/') != 'tf' and topic.lstrip('/') != 'tf_static':
             return False
 
         is_match = False
@@ -94,6 +92,8 @@ class FilterRule:
             elif self.token_from == parent_frame and self.token_to == child_frame:
                 is_match = True
 
+            if parent_frame == 'gps_origin' and child_frame == 'map':
+                print(is_match)
         return is_match
 
     def __msg_match_time__(self, topic, msg, t):
@@ -107,70 +107,82 @@ class FilterRule:
         return is_in_range
 
     @staticmethod
-    def change_default(line):
-        tokens = re.split('\s*[:, ]\s*', line.lower())
+    def change_default(msg_type, enforcement):
+        if msg_type == FilterRule.RULE_TYPE_TF:
+            FilterRule.DEFAULT_ENFORCEMENT_TF = enforcement
+        elif msg_type == FilterRule.RULE_TYPE_TOPIC:
+            FilterRule.DEFAULT_ENFORCEMENT_TOPIC = enforcement
+        elif msg_type == FilterRule.RULE_TYPE_TIME:
+            FilterRule.DEFAULT_ENFORCEMENT_TIME = enforcement
 
-        for token in tokens[1:]:
-            if token == '+':
-                FilterRule.DEFAULT_ENFORCEMENT = FilterRule.ENFORCEMENT_INCLUDE
-            elif token == '-':
-                FilterRule.DEFAULT_ENFORCEMENT = FilterRule.ENFORCEMENT_EXCLUDE
-            else:
-                # '+tf' -> ['+', 'tf']
-                enforcement = token[0]
-                what = token.strip('+-')
-                if what == 'rule':
-                    FilterRule.DEFAULT_ENFORCEMENT = enforcement
-                elif what == FilterRule.RULE_TYPE_TF:
-                    FilterRule.DEFAULT_ENFORCEMENT_TF = enforcement
-                elif what == FilterRule.RULE_TYPE_TOPIC:
-                    FilterRule.DEFAULT_ENFORCEMENT_TOPIC = enforcement
-                elif what == FilterRule.RULE_TYPE_TIME:
-                    FilterRule.DEFAULT_ENFORCEMENT_TIME = enforcement
-        return None
 
     @staticmethod
-    def parse(line):
-        # Comment line
-        if line.startswith('#'):
-            return None
-        if line.startswith('default'):
-            FilterRule.change_default(line)
-            return None
+    def make_rules(doc, msg_type, enforcement):
+        # Make sure what we get is a list
+        # tf:
+        #   include:
+        #     # These lines
+        #     - foo -> bar
+        #     - baz -> qux
+        lines = list(doc[msg_type][enforcement])
 
-        to_ret = FilterRule()
+        to_ret = []
 
-        # + or -?
-        if line.startswith(FilterRule.ENFORCEMENT_INCLUDE):
-            to_ret.enforcement = FilterRule.ENFORCEMENT_INCLUDE
-        elif line.startswith(FilterRule.ENFORCEMENT_EXCLUDE) or line.startswith('!'):
-            to_ret.enforcement = FilterRule.ENFORCEMENT_EXCLUDE
-        else:
-            to_ret.enforcement = FilterRule.DEFAULT_ENFORCEMENT
-        # Remove +, -, and ! if any
-        line = line.lstrip(FilterRule.ENFORCEMENT_INCLUDE + FilterRule.ENFORCEMENT_EXCLUDE + '!')
+        for line in lines:
+            rule = FilterRule()
+            rule.enforcement = enforcement
+            if msg_type == FilterRule.RULE_TYPE_TF:
+                rule = FilterRule.__parse_tf__(rule, line)
+            elif msg_type == FilterRule.RULE_TYPE_TOPIC:
+                rule = FilterRule.__parse_topic__(rule, line)
+            elif msg_type == FilterRule.RULE_TYPE_TIME:
+                rule = FilterRule.__parse_time__(rule, line)
+            to_ret.append(rule)
 
-        if ':' in line:
-            rule_type, rest = line.strip().split(':', 1)
-        else:
-            # Topic
-            rule_type = FilterRule.DEFAULT_RULE_TYPE
-            rest = line.strip()
-        rule_type = rule_type.strip()
+        return to_ret
 
-        # Parse according to rule type
-        to_ret.rule_type = rule_type.lower()
-        if to_ret.rule_type == FilterRule.RULE_TYPE_TIME:
-            return FilterRule.__parse_time__(to_ret, rest)
-        elif to_ret.rule_type == FilterRule.RULE_TYPE_TF:
-            return FilterRule.__parse_tf__(to_ret, rest)
-        elif to_ret.rule_type == FilterRule.RULE_TYPE_TOPIC:
-            return FilterRule.__parse_topic__(to_ret, rest)
+    @staticmethod
+    def parse(yaml_fn):
+        with open(yaml_fn) as fh:
+            doc = yaml.load(fh)
 
-        raise ValueError('Invalid rule type {0} passed to parse'.format(rule_type))
+        rules = []
+        for msg_type in doc.keys():
+            if msg_type not in FilterRule.RULE_TYPES:
+                raise 'Invalid message type {0}'.format(msg_type)
+
+            if 'default' in doc[msg_type]:
+                FilterRule.change_default(doc[msg_type]['default'])
+                continue
+            else:
+                enforcement = None
+                FilterRule.__normalize_keys__(doc[msg_type])
+                if FilterRule.INCLUDE in doc[msg_type]:
+                    if FilterRule.EXCLUDE not in doc[msg_type]:
+                        FilterRule.change_default(msg_type, FilterRule.EXCLUDE)
+                    enforcement = FilterRule.INCLUDE
+                elif FilterRule.EXCLUDE in doc[msg_type]:
+                    if FilterRule.INCLUDE not in doc[msg_type]:
+                        FilterRule.change_default(msg_type, FilterRule.INCLUDE)
+                    enforcement = FilterRule.EXCLUDE
+
+                rules += FilterRule.make_rules(doc, msg_type, enforcement)
+
+        return rules
+
+    @staticmethod
+    def __normalize_keys__(msg):
+        for key in msg.keys():
+            # Non-'+' inclusions
+            if key.startswith('i'):
+                msg[FilterRule.INCLUDE] = msg.pop(key)
+            # Non-'-' exclusions
+            elif key.startswith('e'):
+                msg[FilterRule.EXCLUDE] = msg.pop(key)
 
     @staticmethod
     def __parse_time__(rule, line):
+        rule.rule_type = FilterRule.RULE_TYPE_TIME
         # Seconds from start of file
         tokens = FilterRule.__token_sep__(line)
         if len(tokens) < 2:
@@ -182,6 +194,7 @@ class FilterRule:
 
     @staticmethod
     def __parse_tf__(rule, line):
+        rule.rule_type = FilterRule.RULE_TYPE_TF
         tokens = FilterRule.__token_sep__(line)
         if len(tokens) < 2:
             rule.token_from = tokens[0]
@@ -191,6 +204,7 @@ class FilterRule:
 
     @staticmethod
     def __parse_topic__(rule, line):
+        rule.rule_type = FilterRule.RULE_TYPE_TOPIC
         rule.token_from = line.lstrip('/')
         # Then add it
         rule.token_from = '/' + rule.token_from
