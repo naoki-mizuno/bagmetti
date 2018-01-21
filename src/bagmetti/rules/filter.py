@@ -3,7 +3,7 @@
 from rospy import Time
 import re
 import yaml
-import sys
+import six
 
 
 class FilterRule:
@@ -122,7 +122,12 @@ class FilterRule:
         #     # These lines
         #     - foo -> bar
         #     - baz -> qux
-        lines = list(doc[msg_type][enforcement])
+        lines = doc[msg_type][enforcement]
+        # One-line strings
+        # time:
+        #   include: -> 200
+        if isinstance(lines, six.string_types):
+            lines = [lines]
 
         to_ret = []
 
