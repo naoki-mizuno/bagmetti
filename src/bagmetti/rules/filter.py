@@ -92,8 +92,6 @@ class FilterRule:
             elif self.token_from == parent_frame and self.token_to == child_frame:
                 is_match = True
 
-            if parent_frame == 'gps_origin' and child_frame == 'map':
-                print(is_match)
         return is_match
 
     def __msg_match_time__(self, topic, msg, t):
