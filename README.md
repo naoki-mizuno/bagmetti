@@ -9,7 +9,7 @@ BAG file utility for MEssage, Tf, and TIme.
 
 ## Running
 
-Filter specified messages from a bag file and output to a different bag file.
+Filter in or out certain messages from a bag file and output to a different bag file.
 
 ```
 rosrun bagmetti filter.py <bag file path> <output file path> <config file path>
@@ -18,77 +18,70 @@ rosrun bagmetti filter.py <bag file path> <output file path> <config file path>
 
 ## Config File Format
 
-Here are some samples to get you started:
+Config files use YAML. Here are some samples to get you started:
 
-```
+```yaml
 # gmapping
-default: +rule
-default: +tf -topic +time
-
-# gmapping does this transformation
--tf: map -> odom
-# GPS-based gmapping
--tf: gps_origin -> gps_antenna
--tf: gps_antenna -> gps_base_link
--tf: map -> odom
-/velodyne_points
-/odom
-/vg440/imu/data
-/cnt723/count
-/ssv102/nmea_sentence
-/javad/nmea_sentence
-/cnt723/count
+tf:
+  default: include
+  exclude:
+    # gmapping does this transformation
+    - map -> odom
+    # GPS-based gmapping
+    - gps_origin -> gps_antenna
+    - gps_antenna -> gps_base_link
+    - map -> odom
+topic:
+  default: exclude
+  include:
+    - /velodyne_points
+    - /odom
+    - /vg440/imu/data
+    - /cnt723/count
+    - /ssv102/nmea_sentence
+    - /javad/nmea_sentence
+    - /cnt723/count
+time:
+  default: exclude
+  include:
+    - 30 -> 60
 ```
 
-A line starts with a `+` or a `-` (or `!`), which indicates whether it should
-include or exclude any matching message (i.e. topic/tf/time).
+`include` can be written as `+`, and `exclude` can be `-`. It can even be just
+the first character (i.e. `i` or `e`). If only either of `include` or
+`exclude` is specified, the `default` implicitly becomes the other. You can,
+however, explicitly specify the default.
 
-Following the `+` or `-`, the rule type comes next. A rule type is one of the
-following: `topic`, `tf`, or `time`.
+```yaml
+# amcl
+tf:
+  default: +
+  -:
+    - /map, /odom
+topic:
+  # Implicit default: exclude
+  +:
+    - odom
+    - scan
+```
 
-Lines starting with `#` are comment lines.
-
-Following is a explanation of the `default` lines. `+rule` or simply `+`, says
-that when a line doesn't start with either a `+` or `-`, automatically add `+`
-to it. With `-rule`, the default becomes `-` (exclusion). `+tf -topic +time`
-says that unspecified TF transformations should be included, topics should be
-excluded, and time should be included.
+Be careful when specifying `-` in `default`:
 
 ```
+# This is invalid YAML!!
 default: -
-# Do a bunch of exclusions
-default: +
-# Then switch back to inclusion to do some inclusions
+# Make sure to quote!
+default: '-'
 ```
 
+The conclusion is: don't go through the trouble of explicitly specifying the
+`default`.
 
 ### Rule Types
 
 #### Topics
 
-Rule type: `topic` (can be omitted)
-
-```
-# Include (since that's the default enforcement) /map topic
-/map
-# Exclude /velodyne_points
--/velodyne_points
-default: -
-# Exclude /imu/data and some other stuff
-imu/data
-trajectory
-# Include /scan
-+scan
-```
-
-However, the exclusion rules in the above configuration file are redundant and
-the following results in the same behavior:
-
-```
-default: +
-map
-scan
-```
+The topic name, with or without slash.
 
 
 #### TF
@@ -104,13 +97,19 @@ Separator: `,`, ` ` (space), `->`
 
 For example,
 
-```
-+tf: map -> odom
+```yaml
+tf:
+  include: map -> odom
 ```
 
 will include TF transformations that has `map` as the parent frame ID and
 `odom` as the child frame ID. Either of the frame names can be omitted (e.g.
 `-tf: map ->` to exclude any TF message that has `map` as the parent name).
+
+```yaml
+tf:
+  -: base_link ->
+```
 
 
 #### Time
@@ -121,8 +120,10 @@ Specifies the range of the time, starting from the beginning of the bag file.
 
 Follows the same format as TF. For example,
 
-```
-+time: 32.2 -> 45
+```yaml
+time:
+  include:
+    32.2 -> 45
 ```
 
 will only include messages and transformations published within this time range.

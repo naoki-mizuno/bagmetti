@@ -1,0 +1,34 @@
+---
+
+tf:
+  default: -
+  include:
+    - map -> odom
+  exclude:
+    - odom, base_link
+topic:
+  exclude: map
+
+---
+
+tf:
+  +: gps_origin gps_base_link
+topic:
+  default: +
+    - /odom
+    - map
+    - scan
+time:
+  +: 0, 20
+
+---
+
+topic:
+  include:
+    /vg440/imu/data
+tf:
+  include: map -> odom
+time:
+  include: 30 -> 45
+
+---

@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from bagmetti import Rule
+from bagmetti.rules import FilterRule
 from rosbag import Bag
 from rospy import Time
 import sys
@@ -29,7 +29,7 @@ def get_begin_end(time_rules, bag_file):
 
 def get_topics(rules, bag_topics):
     # Read all topics from bag files
-    if Rule.DEFAULT_ENFORCEMENT_TOPIC == Rule.ENFORCEMENT_INCLUDE:
+    if FilterRule.DEFAULT_ENFORCEMENT_TOPIC == FilterRule.INCLUDE:
         return None
 
     topics = set()
@@ -43,8 +43,9 @@ def get_topics(rules, bag_topics):
                 sample_set.remove(r.token_from)
         if r.is_tf():
             topics.add('/tf')
+            topics.add('/tf_static')
 
-    if len(topics - {'/tf'}) == 0:
+    if len(topics - {'/tf', '/tf_static'}) == 0:
         topics = None
     return topics
 
@@ -55,20 +56,16 @@ def read_rules(conf_file_fn):
     exclude_rules = []
     time_rules = []
 
-    with open(conf_file_fn) as conf_file:
-        for line in conf_file:
-            rule = Rule.parse(line)
-            if rule is None:
-                continue
-            elif rule.is_time():
-                time_rules.append(rule)
-            else:
-                if rule.is_include():
-                    include_rules.append(rule)
-                elif rule.is_exclude():
-                    exclude_rules.append(rule)
-                else:
-                    sys.stderr.write("Couldn't parse line: {0}\n".format(line))
+    all_rules = FilterRule.parse(conf_file_fn)
+    for r in all_rules:
+        if r.is_time():
+            time_rules.append(r)
+        elif r.is_include():
+            include_rules.append(r)
+        elif r.is_exclude():
+            exclude_rules.append(r)
+        else:
+            raise 'Unexpected rule found: {0}'.format(str(r))
 
     return include_rules, exclude_rules, time_rules
 
@@ -94,14 +91,14 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
 
     for topic, msg, t in bag_in.read_messages(topics=topics, start_time=t_start, end_time=t_end):
         # Check default enforcement for this message
-        if topic == '/tf':
-            default = Rule.DEFAULT_ENFORCEMENT_TF
+        if topic == '/tf' or topic == '/tf_static':
+            default = FilterRule.DEFAULT_ENFORCEMENT_TF
         else:
-            default = Rule.DEFAULT_ENFORCEMENT_TOPIC
+            default = FilterRule.DEFAULT_ENFORCEMENT_TOPIC
 
         # When default is to include, only check whether the exclusion
         # rules are satisfied, and if all of them are ok, write it out
-        if default == Rule.ENFORCEMENT_INCLUDE:
+        if default == FilterRule.INCLUDE:
             # Check exclusions
             ok = True
             for r in exclude_rules:
