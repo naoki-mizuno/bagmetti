@@ -188,21 +188,15 @@ class FilterRule:
         rule.rule_type = FilterRule.RULE_TYPE_TIME
         # Seconds from start of file
         tokens = FilterRule.__token_sep__(line)
-        if len(tokens) < 2:
-            rule.token_from = float(tokens[0])
-        else:
-            rule.token_from = float(tokens[0]) if tokens[0] is not None else None
-            rule.token_to = float(tokens[1]) if tokens[1] is not None else None
+        rule.token_from = float(tokens[0]) if tokens[0] is not None else None
+        rule.token_to = float(tokens[1]) if tokens[1] is not None else None
         return rule
 
     @staticmethod
     def __parse_tf__(rule, line):
         rule.rule_type = FilterRule.RULE_TYPE_TF
         tokens = FilterRule.__token_sep__(line)
-        if len(tokens) < 2:
-            rule.token_from = tokens[0]
-        else:
-            rule.token_from, rule.token_to = tokens[0:2]
+        rule.token_from, rule.token_to = tokens[0:2]
         return rule
 
     @staticmethod
