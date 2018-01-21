@@ -1,1 +1,1 @@
-from filter import FilterRule
+from .filter import FilterRule
