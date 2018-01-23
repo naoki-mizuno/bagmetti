@@ -6,6 +6,7 @@
 !CMakeLists.txt
 !package.xml
 !README.md
+!*.txt
 !scripts/
 !*.conf
 !src/
