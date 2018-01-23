@@ -4,7 +4,7 @@
   <img src="images/bagmetti.jpg" alt="Bagmetti processing a bag fie"/>
 </div>
 
-BAG file utility for MEssage, Tf, and TIme.
+**BAG** file utility for **ME**ssage, **T**f, and **TI**me.
 
 
 ## What's This?
@@ -16,10 +16,11 @@ Bagmetti, for example, when:
 - you've done `rosbag record -a` to collected all data in an experiment, but
   only use a few topics for post-processing
 - you want a lightweight bag file without the Velodyne point cloud topic
-- running amcl on a bag file that was created while running gmapping (need to
-  exclude the `map` to `odom` TF transformations that gmapping has done)
-- creating a bag file for only a certain time range (and when `rosbag play -s
-  42 -u 60` isn't good enough)
+- running amcl on a bag file that was created while running gmapping (which
+  means you need to exclude the `map` to `odom` transformations done by
+  gmapping)
+- creating a bag file for only a certain time range (more solid method than
+  `rosbag play -s 42 -u 60`)
 
 
 ### But what about `rosbag filter`?
@@ -29,8 +30,9 @@ is a Python expression, for filtering messages out. This quickly becomes a
 one huge string full of `and`s and `or`s, and is pretty much unmanageable.
 
 Using `rosbag filter` also makes it harder to track down what was used for
-filtering out a certain bag file. Even if you have the command history, you
-may not be able to tell what expression was used last. What's more, one-line
+filtering a certain bag file. Depending on your shell configuration the
+command history can be lost, and even if you have the command history you may
+not be able to tell what expression was used last. What's more, one-line
 expressions are hard to read.
 
 Meet Bagmetti, which lets you manage filtering rules in a YAML file.
