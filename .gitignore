@@ -10,7 +10,7 @@
 !scripts/
 !*.conf
 !src/
-!src/*
+!src/**/
 !configs/
 !launch/
 !samples/
