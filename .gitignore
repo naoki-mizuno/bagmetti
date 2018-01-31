@@ -14,5 +14,7 @@
 !configs/
 !launch/
 !samples/
+!docs/
+!docs/*
 !images/
 !images/*
