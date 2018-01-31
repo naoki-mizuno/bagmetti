@@ -7,7 +7,7 @@ import sys
 
 
 def usage():
-    return 'filter.py <in bag> <out bag> <conf file>\n'
+    return 'filter.py <in bag> <out bag> <conf file>'
 
 
 def get_begin_end(time_rules, bag_file):
@@ -128,9 +128,9 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
 
 if __name__ == '__main__':
     if len(sys.argv) < 4:
-        sys.stderr.write(usage())
+        sys.stderr.write(usage() + '\n')
         sys.exit(1)
     process_bag(*sys.argv[1:4])
 else:
-    sys.stderr.write('bagmetti needs to be run as a script\n')
+    sys.stderr.write('filter.py needs to be run as a script\n')
     sys.exit(1)
