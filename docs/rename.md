@@ -4,6 +4,8 @@ Config files use YAML. Aside from specifying the rename rules separately for
 `topic` and `tf`, there are only two tags in the config files: `from` and
 `to`.
 
+If there are multiple `from` matches, only the first one is applied.
+
 ## Basic Usage
 
 The following will replace all occurrences of `foo` with `bar`.

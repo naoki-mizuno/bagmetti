@@ -108,3 +108,8 @@ time:
 will only include messages and transformations published within this time range.
 
 As is the case for TF, either the start time or end time can be omitted.
+
+Be careful when you have topics that are only published once at the beginning
+of the bag file (for example, latched topics such as `/map`). When you trim
+the bag file not starting from the beginning, these topics are not included in
+the new bag file.
