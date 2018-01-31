@@ -1,0 +1,24 @@
+topic:
+  # /my_foo/a/b/c -> /my_bar/c/b/a
+  # /my_foo/a/b/c/d -> /my_bar/d/c/a/b (longest match at the first asterisk)
+  - from: foo/*/*/*
+    to: bar/{2}/{1}/{0}
+  # /my_shoot/a/b -> /my_b
+  - from: shoot/*/*
+    to: {1}
+  # /velodyne_points -> /hokuyo_points
+  # /velodyne_packets -> /hokuyo_packets
+  - from: velodyne
+    to: hokuyo
+  # Same as:
+  #   from: bar
+  #   to: baz
+  - from: bar/*
+    to: baz/*
+tf:
+  # gps_base_link -> gnss_base_link
+  - from: gps_
+    to: gnss_
+  # /spatial/imu/raw -> /imu/raw
+  - from: /spatial
+    to:
