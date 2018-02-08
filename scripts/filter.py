@@ -38,6 +38,9 @@ def get_topics(rules, bag_topics):
     topics = set()
     sample_set = set(bag_topics)
 
+    if FilterRule.DEFAULT_ENFORCEMENT_TF == FilterRule.INCLUDE:
+        topics = topics.union(TF_TOPICS)
+
     for r in rules:
         if r.is_topic():
             if r.is_include():
