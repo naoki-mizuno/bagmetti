@@ -154,7 +154,7 @@ class FilterRule:
                 raise 'Invalid message type {0}'.format(msg_type)
 
             if 'default' in doc[msg_type]:
-                FilterRule.change_default(doc[msg_type]['default'])
+                FilterRule.change_default(msg_type, doc[msg_type]['default'])
                 continue
             else:
                 enforcement = None
