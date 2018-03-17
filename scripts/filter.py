@@ -94,7 +94,9 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
     bag_topics = bag_in.get_type_and_topic_info().topics.keys()
     topics = get_topics(topic_rules, bag_topics)
 
-    for topic, msg, t in bag_in.read_messages(topics=topics, start_time=t_start, end_time=t_end):
+    for topic, msg, t in bag_in.read_messages(topics=topics,
+                                              start_time=t_start,
+                                              end_time=t_end):
         # Check default enforcement for this message
         if topic in TF_TOPICS:
             default = FilterRule.DEFAULT_ENFORCEMENT_TF

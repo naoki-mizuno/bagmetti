@@ -113,7 +113,6 @@ class FilterRule:
         elif msg_type == FilterRule.RULE_TYPE_TIME:
             FilterRule.DEFAULT_ENFORCEMENT_TIME = enforcement
 
-
     @staticmethod
     def make_rules(doc, msg_type, enforcement):
         # Make sure what we get is a list
