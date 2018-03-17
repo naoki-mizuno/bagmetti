@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 from bagmetti.rules import FilterRule
 from rosbag import Bag
