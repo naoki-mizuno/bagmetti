@@ -2,6 +2,36 @@
 
 Config files use YAML. Here are some samples to get you started:
 
+## GMapping
+
+```yaml
+tf:
+  exclude:
+    - map -> odom
+topic:
+  include:
+    - /scan
+    # If you want te recreate /scan from 3D point clouds
+    # - /velodyne_points
+    - /odom
+    - /imu
+```
+
+## AMCL
+
+```yaml
+tf:
+  exclude:
+    - map -> odom
+topic:
+  include:
+    - /map
+    - /odom
+    - /scan
+```
+
+## More on What You Can Do
+
 ```yaml
 # Create a bag file that can be used for gmapping from a bag file
 # with all sensor data + running gmapping while collecting data
