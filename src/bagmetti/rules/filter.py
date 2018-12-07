@@ -145,8 +145,12 @@ class FilterRule:
 
     @staticmethod
     def parse(yaml_fn):
-        with open(yaml_fn) as fh:
+        try:
+            fh = open(yaml_fn)
             doc = yaml.load(fh)
+        except IOError:
+            # Not a file name, probably a YAML string
+            doc = yaml.load(yaml_fn)
 
         rules = []
         for msg_type in doc.keys():
