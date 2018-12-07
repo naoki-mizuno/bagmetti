@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+    <test test-name="test_rename" pkg="bagmetti" type="test_rename.py" />
+</launch>
