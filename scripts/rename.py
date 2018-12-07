@@ -36,14 +36,15 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
     bag_out = Bag(bag_out_fn, 'w')
     topic_rules, tf_rules = RenameRule.parse(conf_file_fn)
 
-    for topic, msg, t in bag_in.read_messages():
+    messages = bag_in.read_messages(return_connection_header=True)
+    for topic, msg, t, conn_header in messages:
         if topic == '/tf' or topic == '/tf_static':
             new_topic = topic
             new_msg = modify_tf(msg, tf_rules)
         else:
             new_topic = modify_topic(topic, topic_rules)
             new_msg = msg
-        bag_out.write(new_topic, new_msg, t)
+        bag_out.write(new_topic, new_msg, t, connection_header=conn_header)
 
     bag_in.close()
     bag_out.close()
