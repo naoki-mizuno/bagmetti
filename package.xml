@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<package>
+<package format="2">
   <name>bagmetti</name>
-  <version>0.1.0</version>
+  <version>0.4.2</version>
   <description>BAG file utility for MEssage, Tf, and TIme</description>
 
   <maintainer email="mizuno.naoki@rm.is.tohoku.ac.jp">Naoki Mizuno</maintainer>

@@ -1,13 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 2.8.3)
 project(bagmetti)
 
 find_package(catkin REQUIRED)
 
-catkin_package()
-
 catkin_python_setup()
 
-catkin_install_python(PROGRAMS
-    scripts/filter.py
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+catkin_package()
