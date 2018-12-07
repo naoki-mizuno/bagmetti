@@ -5,12 +5,12 @@ import rostest
 
 import unittest
 
-from bagmetti.rules.filter import FilterRule
+from bagmetti.rules.rename import RenameRule
 
 
-class TestFilter(unittest.TestCase):
+class TestRename(unittest.TestCase):
     pass
 
 
 if __name__ == '__main__':
-    unittest.main()
+    rostest.rosrun('bagmetti', 'rename.py', TestRename)
