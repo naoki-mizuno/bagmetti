@@ -8,7 +8,5 @@ catkin_python_setup()
 catkin_package()
 
 if (CATKIN_ENABLE_TESTING)
-  find_package(rostest REQUIRED)
-  add_rostest(test/filter.test)
-  add_rostest(test/rename.test)
+  catkin_add_nosetests(test WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
