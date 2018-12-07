@@ -6,9 +6,6 @@ from rospy import Time
 import sys
 
 
-TF_TOPICS = {'/tf', '/tf_static'}
-
-
 def usage():
     return 'filter.py <in bag> <out bag> <conf file>'
 
@@ -39,7 +36,7 @@ def get_topics(rules, bag_topics):
     sample_set = set(bag_topics)
 
     if FilterRule.DEFAULT_ENFORCEMENT_TF == FilterRule.INCLUDE:
-        topics = topics.union(TF_TOPICS)
+        topics = topics.union(FilterRule.TF_TOPICS)
 
     for r in rules:
         if r.is_topic():
@@ -48,9 +45,9 @@ def get_topics(rules, bag_topics):
             elif r.is_exclude() and r.token_from in sample_set:
                 sample_set.remove(r.token_from)
         if r.is_tf():
-            topics = topics.union(TF_TOPICS)
+            topics = topics.union(FilterRule.TF_TOPICS)
 
-    if len(topics - TF_TOPICS) == 0:
+    if len(topics - FilterRule.TF_TOPICS) == 0:
         topics = None
     return topics
 
@@ -100,7 +97,7 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
                                     return_connection_header=True)
     for topic, msg, t, conn_header in messages:
         # Check default enforcement for this message
-        if topic in TF_TOPICS:
+        if FilterRule.is_tf_topic(topic):
             default = FilterRule.DEFAULT_ENFORCEMENT_TF
         else:
             default = FilterRule.DEFAULT_ENFORCEMENT_TOPIC
