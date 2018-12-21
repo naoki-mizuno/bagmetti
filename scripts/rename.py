@@ -31,6 +31,17 @@ def modify_tf(msg, rules):
     return msg
 
 
+def modify_msg(msg, rules):
+    if not msg._has_header:
+        return msg
+    for r in rules:
+        new_frame_id, changed = r.rename(msg.header.frame_id)
+        if changed:
+            msg.header.frame_id = new_frame_id
+            return msg
+    return msg
+
+
 def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
     bag_in = Bag(bag_in_fn)
     bag_out = Bag(bag_out_fn, 'w')
@@ -43,7 +54,8 @@ def process_bag(bag_in_fn, bag_out_fn, conf_file_fn):
             new_msg = modify_tf(msg, tf_rules)
         else:
             new_topic = modify_topic(topic, topic_rules)
-            new_msg = msg
+            # Modify the frame_id in header if header exists
+            new_msg = modify_msg(msg, tf_rules)
         bag_out.write(new_topic, new_msg, t, connection_header=conn_header)
 
     bag_in.close()
