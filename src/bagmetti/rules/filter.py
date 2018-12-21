@@ -79,20 +79,22 @@ class FilterRule:
         if topic.lstrip('/') != 'tf' and topic.lstrip('/') != 'tf_static':
             return False
 
-        is_match = False
-        # TODO: Only filter transforms that are bad
+        matching_transforms = []
         for transform in msg.transforms:
             parent_frame = transform.header.frame_id.lstrip('/')
             child_frame = transform.child_frame_id.lstrip('/')
 
             if self.token_from is None and self.token_to == child_frame:
-                is_match = True
+                matching_transforms.append(transform)
             elif self.token_to is None and self.token_from == parent_frame:
-                is_match = True
+                matching_transforms.append(transform)
             elif self.token_from == parent_frame and self.token_to == child_frame:
-                is_match = True
+                matching_transforms.append(transform)
 
-        return is_match
+        if len(matching_transforms) > 0:
+            # TODO: This is destructive!
+            msg.transforms = matching_transforms
+        return len(matching_transforms) > 0
 
     def __msg_match_time__(self, topic, msg, t):
         is_in_range = True
