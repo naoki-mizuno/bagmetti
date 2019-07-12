@@ -6,6 +6,7 @@
 
 **BAG** file utility for **ME**ssage, **T**f, and **TI**me.
 
+[![Build Status](https://travis-ci.com/naoki-mizuno/bagmetti.svg?branch=master)](https://travis-ci.com/naoki-mizuno/bagmetti)
 
 ## What's This?
 
