@@ -1,8 +1,10 @@
 *
 !.gitignore
+!.travis.yml
 !*.py
 !*.yaml
 !*.launch
+!*.test
 !CMakeLists.txt
 !package.xml
 !README.md
@@ -18,3 +20,5 @@
 !docs/*
 !images/
 !images/*
+!test/
+!test/**/

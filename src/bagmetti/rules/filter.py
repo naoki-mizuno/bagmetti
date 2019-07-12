@@ -7,6 +7,8 @@ import six
 
 
 class FilterRule:
+    TF_TOPICS = {'/tf', '/tf_static'}
+
     TOKEN_SEP = [',', '->', ' ']
     INCLUDE = '+'
     EXCLUDE = '-'
@@ -76,7 +78,7 @@ class FilterRule:
         return self.token_from == topic
 
     def __msg_match_tf__(self, topic, msg, t):
-        if topic.lstrip('/') != 'tf' and topic.lstrip('/') != 'tf_static':
+        if not FilterRule.is_tf_topic(topic):
             return False
 
         is_match = False
@@ -103,6 +105,18 @@ class FilterRule:
             is_in_range = False
 
         return is_in_range
+
+    @staticmethod
+    def is_tf_topic(topic):
+        """
+        Checks whether the given topic name is a TF topic name
+
+        This is done by checking the suffix of the topic name
+        :param topic:
+        :return: True if it is a TF topic, False otherwise
+        :rtype: bool
+        """
+        return any([topic.endswith(name) for name in FilterRule.TF_TOPICS])
 
     @staticmethod
     def change_default(msg_type, enforcement):
@@ -145,8 +159,12 @@ class FilterRule:
 
     @staticmethod
     def parse(yaml_fn):
-        with open(yaml_fn) as fh:
+        try:
+            fh = open(yaml_fn)
             doc = yaml.load(fh)
+        except IOError:
+            # Not a file name, probably a YAML string
+            doc = yaml.load(yaml_fn)
 
         rules = []
         for msg_type in doc.keys():

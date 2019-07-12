@@ -1,0 +1,23 @@
+language: generic
+
+services:
+  - docker
+
+compiler:
+  - gcc
+
+env:
+  global:
+    - ROS_REPO=ros
+    - CATKIN_CONFIG="--no-install -DCMAKE_BUILD_TYPE=Release"
+  matrix:
+    - ROS_DISTRO="kinetic"
+      DOCKER_BASE_IMAGE=ros:kinetic-perception
+    - ROS_DISTRO="melodic"
+      DOCKER_BASE_IMAGE=ros:melodic-perception
+
+install:
+  - git clone --depth 1 https://github.com/ros-industrial/industrial_ci.git .ci_config
+
+script:
+  - source .ci_config/travis.sh
