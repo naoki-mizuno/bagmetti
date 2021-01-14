@@ -161,10 +161,10 @@ class FilterRule:
     def parse(yaml_fn):
         try:
             fh = open(yaml_fn)
-            doc = yaml.load(fh)
+            doc = yaml.safe_load(fh)
         except IOError:
             # Not a file name, probably a YAML string
-            doc = yaml.load(yaml_fn)
+            doc = yaml.safe_load(yaml_fn)
 
         rules = []
         for msg_type in doc.keys():

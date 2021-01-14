@@ -48,7 +48,7 @@ class RenameRule:
         :return: lists of topic rules and tf rules
         """
         with open(yaml_fn) as fh:
-            doc = yaml.load(fh)
+            doc = yaml.safe_load(fh)
         tf_rules = []
         topic_rules = []
 
