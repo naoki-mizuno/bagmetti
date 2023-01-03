@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from rospy import Time
+import copy
 import re
 import yaml
 import six
@@ -192,7 +193,8 @@ class FilterRule:
 
     @staticmethod
     def __normalize_keys__(msg):
-        for key in msg.keys():
+        msg_copy = copy.deepcopy(msg)
+        for key in msg_copy:
             # Non-'+' inclusions
             if key.startswith('i'):
                 msg[FilterRule.INCLUDE] = msg.pop(key)
